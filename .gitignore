@@ -1,0 +1,13 @@
+.preflight/
+.env
+.env.*
+.DS_Store
+node_modules/
+coverage/
+web/dist/
+api/log/*
+!api/log/.keep
+api/tmp/*
+!api/tmp/.keep
+api/storage/*.sqlite3*
+api/config/master.key
