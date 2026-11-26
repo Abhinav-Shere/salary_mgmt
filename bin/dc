@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+for name in $(compgen -e | grep '^COMPOSE_' || true); do
+  unset "$name"
+done
+
+refuse() {
+  echo "bin/dc: $1" >&2
+  exit 1
+}
+
+[[ $# -gt 0 ]] || refuse "usage: bin/dc <compose command> [args]"
+[[ $1 != -* ]] || refuse "global options are not allowed"
+[[ $1 != pull ]] || refuse "pull is not allowed"
+
+previous=""
+for arg in "$@"; do
+  [[ $arg != --pull* ]] || refuse "--pull is not allowed"
+  [[ $arg != --rmi=all ]] || refuse "--rmi all is not allowed"
+  [[ ! ($previous == --rmi && $arg == all) ]] || refuse "--rmi all is not allowed"
+  previous=$arg
+done
+
+port_is_ours() {
+  docker ps --filter label=com.docker.compose.project=salary_mgmt --format '{{.Ports}}' | grep -q "127.0.0.1:$1->"
+}
+
+port_is_free() {
+  ! lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+pick_port() {
+  local port=$1
+  until port_is_ours "$port" || port_is_free "$port"; do
+    port=$((port + 1))
+  done
+  echo "$port"
+}
+
+export API_PORT="${API_PORT:-$(pick_port 3200)}"
+export WEB_PORT="${WEB_PORT:-$(pick_port 5180)}"
+
+if [[ $1 == up ]]; then
+  echo "bin/dc: api on http://127.0.0.1:$API_PORT, web on http://127.0.0.1:$WEB_PORT" >&2
+fi
+
+exec docker compose --project-name salary_mgmt --file compose.yaml "$@"
