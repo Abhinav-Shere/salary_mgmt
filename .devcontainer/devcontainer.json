@@ -1,0 +1,13 @@
+{
+  "name": "salary_mgmt editor",
+  "dockerComposeFile": "../compose.yaml",
+  "service": "editor",
+  "runServices": ["editor"],
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "none",
+  "customizations": {
+    "vscode": {
+      "extensions": ["oxc.oxc-vscode"]
+    }
+  }
+}

@@ -35,7 +35,7 @@ Out of scope, with the reason:
 | Salary history and audit trail | Useful, but it doubles the data model. Updates overwrite the value. |
 | Soft delete or archiving | The brief asks for delete. A real HR system would archive. |
 | CSV import/export, charts, i18n | Not needed to answer the questions above. |
-| Deployment and video demo | Excluded by the brief. |
+| Deployment and video demo | Deferred: required by the brief's Readiness section, planned after the core app is complete. |
 
 ## 3. Data model
 
@@ -198,7 +198,7 @@ Frontend, Vitest + React Testing Library:
 
 Quality gates for every milestone:
 
-- RuboCop (`rubocop-rails-omakase`), ESLint and `tsc --noEmit` pass.
+- RuboCop (`rubocop-rails-omakase`), oxlint (the linter the current Vite template ships with) and `tsc -b` pass.
 - Both test suites pass.
 - A comment grep finds no comments.
 - The Docker isolation check is clean.
@@ -212,12 +212,12 @@ flowchart LR
   end
 
   subgraph Compose["Docker Compose project: salary_mgmt"]
-    subgraph Web["web container (Node, 768m)"]
+    subgraph Web["web container (Node, 512m)"]
       Vite["Vite dev server :5180"]
       UI["React + TypeScript + Mantine<br/>React Router, TanStack Query, @mantine/form"]
     end
 
-    subgraph Api["api container (Ruby, 768m)"]
+    subgraph Api["api container (Ruby, 512m)"]
       Routes["Rails 8 API /api/v1"]
       EC["EmployeesController"]
       LC["LookupsController"]
@@ -227,7 +227,7 @@ flowchart LR
       Seeder["EmployeeSeeder<br/>batched insert_all in one transaction"]
     end
 
-    DB[("SQLite<br/>storage volume")]
+    DB[("SQLite<br/>salary_mgmt_storage volume at /data")]
     Names["db/seeds/first_names.txt<br/>db/seeds/last_names.txt"]
   end
 
@@ -259,6 +259,7 @@ flowchart LR
 | Cross-origin | Vite proxy | `rack-cors` | One origin in development, one gem fewer. A production build would be served behind the same reverse proxy. |
 | Delete | Hard delete | Soft delete | Matches the brief. Archiving is listed as next. |
 | Tooling | Everything in Docker | Host Ruby/Node | Keeps the host toolchains of other projects untouched. It costs some first-build time. |
+| Memory | api 512m, web 512m; one image build at a time | Larger caps | Docker on this machine is shared with other projects. Before each build and before starting containers I check `docker stats --no-stream` and stop if usage would pass about 85%. |
 
 ## 11. Milestones
 

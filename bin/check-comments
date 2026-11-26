@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+files=$(find . -type f \
+  -not -path './.git/*' -not -path './.preflight/*' -not -path './docs/*' \
+  -not -path '*/node_modules/*' -not -path './web/dist/*' \
+  -not -path './api/tmp/*' -not -path './api/log/*' \
+  -not -name '*.md' -not -name '*.txt' -not -name '.keep' -not -name '.DS_Store' \
+  -not -name 'package-lock.json' -not -name 'Gemfile.lock' -not -name '*.sqlite3*')
+
+full_line=$(echo "$files" | xargs grep -nE '^\s*(#|//|/\*|\*\s|<!--)' | grep -vE ':1:#!/usr/bin/env |# frozen_string_literal: true$' || true)
+trailing=$(echo "$files" | xargs grep -nE '\s#\s|\s//\s|/\*(\s|\*)' | grep -vE 'https?://' || true)
+
+if [[ -n $full_line || -n $trailing ]]; then
+  printf '%s\n' "$full_line" "$trailing" | sed '/^$/d'
+  exit 1
+fi
+
+echo "No comments found in $(echo "$files" | wc -l | tr -d ' ') files."
